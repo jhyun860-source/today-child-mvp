@@ -224,6 +224,16 @@ export default function Home() {
     if (months !== null) localStorage.setItem("todaychild_months", String(months));
   }, [months]);
 
+  // 화면(온보딩→카드→완료) 전환 시 항상 최상단으로 스크롤해 전환을 명확히 인지시킴
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [months, showDone]);
+
+  const handleSelectAge = (m: number) => {
+    setMonths(m);
+    setShowDone(false);
+  };
+
   const handleDone = () => {
     if (doneToday) return;
     const next = streak + 1;
@@ -278,7 +288,7 @@ export default function Home() {
 
         <div className="w-full max-w-[420px]">
           {months === null ? (
-            <Onboarding onSelect={setMonths} />
+            <Onboarding onSelect={handleSelectAge} />
           ) : showDone ? (
             <DoneView streak={streak} onBack={() => setShowDone(false)} />
           ) : (
@@ -297,4 +307,3 @@ export default function Home() {
     </div>
   );
 }
-
