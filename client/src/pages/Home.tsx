@@ -4,7 +4,7 @@
  * 원칙: 30초 안에 읽고, 3분 안에 실행. 메뉴 최소화. Zero-Time UI.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Check, Clock, RotateCcw, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Clock, RotateCcw, ShieldCheck, Sparkles, BookOpen } from "lucide-react";
 import { getTodayMission, categoryColors, type Mission } from "@/lib/missions";
 
 const LOGO = "/manus-storage/today-child-logo_74161b7e.png";
@@ -155,15 +155,25 @@ function TodayCard({
             <p className="text-[14.5px] leading-relaxed text-foreground/85">{mission.why}</p>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
               <span className="text-[11.5px] font-bold text-muted-foreground mr-0.5">근거</span>
-              {mission.sources.map((s) => (
-                <span key={s} className="inline-flex items-center gap-1 rounded-md bg-[oklch(0.93_0.025_150)] px-2 py-1">
+              {mission.sources.map((source) => (
+                <a
+                  key={source.url}
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={source.doc}
+                  className="inline-flex items-center gap-1 rounded-md bg-[oklch(0.93_0.025_150)] px-2 py-1 hover:brightness-95 transition-all"
+                >
                   <ShieldCheck className="w-3 h-3 text-[oklch(0.42_0.07_150)]" />
-                  <span className="text-[11.5px] font-bold text-[oklch(0.42_0.07_150)]">{s}</span>
-                </span>
+                  <span className="text-[11.5px] font-bold text-[oklch(0.42_0.07_150)]">{source.name}</span>
+                </a>
               ))}
             </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/70">
+              {mission.sources.map((s) => `${s.name} · ${s.doc}`).join(" / ")}
+            </p>
             <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted-foreground/80">
-              국내외 공공 보건기관의 개방 자료를 바탕으로, 바로 실천할 수 있게 재구성했습니다.
+              위 기관의 공개 원문을 직접 확인·조사하여 실천 가이드로 재구성했습니다. 배지를 누르면 원문으로 이동합니다.
             </p>
           </div>
         </div>
@@ -295,11 +305,16 @@ export default function Home() {
       {/* 앱 영역 */}
       <main className="flex-1 flex flex-col items-center px-5 py-8 lg:justify-center">
         {/* 모바일 헤더 */}
-        <header className="lg:hidden flex items-center gap-2.5 mb-7 self-start">
-          <img src={LOGO} alt="오늘의아이" className="w-9 h-9" />
-          <span className="font-serif-kr text-[19px] font-bold">
-            <span className="text-primary">오늘</span>의아이
-          </span>
+        <header className="lg:hidden flex items-center justify-between w-full mb-7">
+          <div className="flex items-center gap-2.5">
+            <img src={LOGO} alt="오늘의아이" className="w-9 h-9" />
+            <span className="font-serif-kr text-[19px] font-bold">
+              <span className="text-primary">오늘</span>의아이
+            </span>
+          </div>
+          <a href="/catalog" className="p-2 rounded-lg hover:bg-orange-100 transition-colors text-orange-700" title="모든 미션 보기">
+            <BookOpen className="w-5 h-5" />
+          </a>
         </header>
 
         <div className="w-full max-w-[420px]">
