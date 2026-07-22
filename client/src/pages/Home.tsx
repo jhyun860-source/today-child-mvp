@@ -163,7 +163,7 @@ function TodayCard({
               ))}
             </div>
             <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted-foreground/80">
-              세계 소아과 기관과 국내 공공기관의 권고를 바탕으로, 바로 실천할 수 있게 재구성했습니다.
+              국내외 공공 보건기관의 개방 자료를 바탕으로, 바로 실천할 수 있게 재구성했습니다.
             </p>
           </div>
         </div>
@@ -279,13 +279,13 @@ export default function Home() {
           <div className="mt-8 flex flex-col gap-2 text-[13.5px] text-muted-foreground">
             <span>✓ 회원가입 없음 · 개인정보 수집 없음</span>
             <span>✓ 30초 안에 읽고, 3분 안에 실행</span>
-            <span>✓ AAP·CDC·NHS 등 세계 소아과 기관 근거 · 출처 표기</span>
+            <span>✓ 질병관리청·CDC 등 공공기관 근거 · 출처 표기</span>
           </div>
           <div className="mt-6 rounded-2xl bg-[oklch(0.99_0.008_90)] border border-border px-5 py-4 max-w-[380px]">
             <p className="text-[12px] font-bold text-[oklch(0.42_0.07_150)] mb-1.5">신뢰할 수 있는 근거</p>
             <p className="text-[13px] leading-relaxed text-foreground/80">
-              미국소아과학회(AAP), 미국 질병통제예방센터(CDC), 영국 NHS, WHO, 하버드 아동발달센터와
-              질병관리청·보건복지부·대한소아청소년과학회의 자료만 사용합니다.
+              질병관리청·보건복지부·국가건강정보포털과 미국 CDC, 영국 NHS, WHO 등
+              공공기관이 공개한 자료만 근거로 사용하고, 모든 카드에 출처를 표기합니다.
             </p>
           </div>
         </div>
