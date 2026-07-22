@@ -4,7 +4,7 @@
  * 원칙: 30초 안에 읽고, 3분 안에 실행. 메뉴 최소화. Zero-Time UI.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Check, Clock, RotateCcw, Sparkles } from "lucide-react";
+import { Check, Clock, RotateCcw, ShieldCheck, Sparkles } from "lucide-react";
 import { getTodayMission, categoryColors, type Mission } from "@/lib/missions";
 
 const LOGO = "/manus-storage/today-child-logo_74161b7e.png";
@@ -153,9 +153,18 @@ function TodayCard({
               <Sparkles className="w-3.5 h-3.5" /> 왜 도움이 될까요?
             </p>
             <p className="text-[14.5px] leading-relaxed text-foreground/85">{mission.why}</p>
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-[oklch(0.93_0.025_150)] px-2.5 py-1">
-              <span className="text-[11.5px] font-bold text-[oklch(0.42_0.07_150)]">출처 · {mission.source}</span>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="text-[11.5px] font-bold text-muted-foreground mr-0.5">근거</span>
+              {mission.sources.map((s) => (
+                <span key={s} className="inline-flex items-center gap-1 rounded-md bg-[oklch(0.93_0.025_150)] px-2 py-1">
+                  <ShieldCheck className="w-3 h-3 text-[oklch(0.42_0.07_150)]" />
+                  <span className="text-[11.5px] font-bold text-[oklch(0.42_0.07_150)]">{s}</span>
+                </span>
+              ))}
             </div>
+            <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted-foreground/80">
+              세계 소아과 기관과 국내 공공기관의 권고를 바탕으로, 바로 실천할 수 있게 재구성했습니다.
+            </p>
           </div>
         </div>
 
@@ -270,7 +279,14 @@ export default function Home() {
           <div className="mt-8 flex flex-col gap-2 text-[13.5px] text-muted-foreground">
             <span>✓ 회원가입 없음 · 개인정보 수집 없음</span>
             <span>✓ 30초 안에 읽고, 3분 안에 실행</span>
-            <span>✓ 공신력 있는 기관 자료 기반 · 출처 표기</span>
+            <span>✓ AAP·CDC·NHS 등 세계 소아과 기관 근거 · 출처 표기</span>
+          </div>
+          <div className="mt-6 rounded-2xl bg-[oklch(0.99_0.008_90)] border border-border px-5 py-4 max-w-[380px]">
+            <p className="text-[12px] font-bold text-[oklch(0.42_0.07_150)] mb-1.5">신뢰할 수 있는 근거</p>
+            <p className="text-[13px] leading-relaxed text-foreground/80">
+              미국소아과학회(AAP), 미국 질병통제예방센터(CDC), 영국 NHS, WHO, 하버드 아동발달센터와
+              질병관리청·보건복지부·대한소아청소년과학회의 자료만 사용합니다.
+            </p>
           </div>
         </div>
         <p className="text-[12px] text-muted-foreground/60">MVP 목업 · 콘텐츠는 예시입니다</p>
