@@ -14,6 +14,7 @@ import {
   Heart,
   Home as HomeIcon,
   Menu,
+  Maximize2,
   Minus,
   Plus,
   Search,
@@ -24,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type Recipe = {
   id: string;
@@ -491,6 +493,7 @@ function RecipeMode({
             <p className="mt-5 border-l-2 border-[#bf3f32] pl-3 text-sm leading-6 text-white/80">{recipe.description}</p>
           </div>
 
+          <div className="mt-5"><RecipePhotoReference recipe={recipe} /></div>
           <div className="mt-9"><IngredientBlock recipe={recipe} batch={batch} setBatch={setBatch} /></div>
 
           <div className="mt-9">
@@ -514,6 +517,27 @@ function RecipeMode({
         </div>
       </div>
     </section>
+  );
+}
+
+function RecipePhotoReference({ recipe }: { recipe: Recipe }) {
+  return (
+    <Dialog>
+      <div className="grid grid-cols-[minmax(0,1fr)_118px] overflow-hidden border border-black/15 bg-[#eee7db] sm:grid-cols-[minmax(0,1fr)_150px]">
+        <div className="px-4 py-4 sm:px-5"><p className="font-mono text-[10px] font-bold tracking-[0.16em] text-[#bf3f32]">VISUAL REFERENCE</p><p className="mt-1 font-serif text-xl">완성·가니시 참고</p><p className="mt-2 text-xs leading-5 text-[#625e55]">서빙 전 사진과 비교해 잔, 얼음, 가니시 위치를 확인하세요.</p></div>
+        <DialogTrigger asChild>
+          <button className="group relative min-h-[124px] overflow-hidden bg-[#d5ccbe] text-left" aria-label={`${recipe.name} 완성 사진 크게 보기`}>
+            <img src={recipe.image} alt={`${recipe.name} 완성 및 가니시 참고 사진`} className="absolute inset-0 h-full w-full object-contain p-1 transition duration-300 group-hover:scale-105" />
+            <span className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full bg-[#171714] text-white shadow-sm"><Maximize2 size={13} /></span>
+          </button>
+        </DialogTrigger>
+      </div>
+      <DialogContent className="max-w-[calc(100%-1.5rem)] border-black/15 bg-[#f8f5ef] p-4 sm:max-w-md">
+        <DialogHeader className="pr-8 text-left"><DialogTitle className="font-serif text-2xl">{recipe.name} 완성 참고</DialogTitle><DialogDescription>잔 · 얼음 · 가니시 위치를 비교하세요.</DialogDescription></DialogHeader>
+        <div className="mt-1 overflow-hidden bg-[#e5ddd0]"><img src={recipe.image} alt={`${recipe.name} 완성 및 가니시 참고 사진`} className="max-h-[65dvh] w-full object-contain" /></div>
+        <p className="border-l-2 border-[#bf3f32] pl-3 text-xs leading-5 text-[#625e55]">{recipe.glass}에 서빙하고, {recipe.garnish}를 마지막에 올립니다.</p>
+      </DialogContent>
+    </Dialog>
   );
 }
 
