@@ -11,7 +11,7 @@ vi.mock("./db", () => ({
 
 vi.mock("./storage", () => ({ storagePut: vi.fn() }));
 
-import { listRecipeDetails, updateRecipeImage } from "./db";
+import { createRecipeDetail, listRecipeDetails, updateRecipeImage } from "./db";
 import { recipeRouter } from "./recipeRouter";
 import { storagePut } from "./storage";
 
@@ -64,5 +64,15 @@ describe("recipeRouter photo flow", () => {
     expect(storagePut).toHaveBeenCalledWith(expect.stringMatching(/^recipes\/12\/garnish\//), expect.any(Buffer), "image/webp");
     expect(updateRecipeImage).toHaveBeenCalledWith(12, "garnish", "/manus-storage/recipes/12/garnish/lime_hash.webp", "recipes/12/garnish/lime_hash.webp");
     expect(result.garnishImageUrl).toBe("/manus-storage/recipes/12/garnish/lime_hash.webp");
+  });
+
+  it("imports the visible default cocktails as editable recipes when the management list is empty", async () => {
+    vi.mocked(listRecipeDetails).mockResolvedValue([]);
+    vi.mocked(createRecipeDetail).mockImplementation(async (input: any) => ({ ...recipeWithBothPhotos, id: input.name.length, name: input.name } as any));
+    const caller = recipeRouter.createCaller(adminContext);
+    const result = await caller.initializeDefaults();
+    expect(createRecipeDetail).toHaveBeenCalledTimes(4);
+    expect(result.created).toBe(4);
+    expect(result.recipes.map(recipe => recipe?.name)).toEqual(["Negroni", "Gimlet", "Old Fashioned", "Vermouth Tonic"]);
   });
 });

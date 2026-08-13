@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { archiveRecipe, createRecipeDetail, getRecipeDetail, listRecipeDetails, updateRecipeDetail, updateRecipeImage } from "./db";
+import { defaultBarRecipes } from "./defaultRecipes";
 import { storagePut } from "./storage";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 
@@ -52,6 +53,12 @@ export const recipeRouter = router({
     return result;
   }),
   archive: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => archiveRecipe(input.id)),
+  initializeDefaults: adminProcedure.mutation(async ({ ctx }) => {
+    const existing = await listRecipeDetails();
+    if (existing.length > 0) return { created: 0, recipes: existing };
+    const recipes = await Promise.all(defaultBarRecipes.map(recipe => createRecipeDetail(recipe, ctx.user.id)));
+    return { created: recipes.length, recipes: recipes.filter(Boolean) };
+  }),
   uploadImage: adminProcedure.input(imageUploadInput).mutation(async ({ input }) => {
     if (!allowedImageTypes.includes(input.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "JPG, PNG, WEBP 파일만 업로드할 수 있습니다." });
     const encoded = input.base64.includes(",") ? input.base64.split(",").pop() ?? "" : input.base64;
