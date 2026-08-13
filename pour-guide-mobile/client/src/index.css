@@ -67,6 +67,7 @@ button:active { transform: scale(0.97); }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 .ledger-barcode { display: block; width: 13px; height: 42px; background: repeating-linear-gradient(to bottom, #171714 0 2px, transparent 2px 4px, #171714 4px 5px, transparent 5px 7px); opacity: .72; }
+.ledger-barcode-light { display: block; width: 13px; height: 36px; background: repeating-linear-gradient(to bottom, #f8f5ef 0 2px, transparent 2px 4px, #f8f5ef 4px 5px, transparent 5px 7px); opacity: .7; }
 
 @media (prefers-reduced-motion: no-preference) {
   article { animation: ledger-rise 360ms cubic-bezier(0.23, 1, 0.32, 1) both; }

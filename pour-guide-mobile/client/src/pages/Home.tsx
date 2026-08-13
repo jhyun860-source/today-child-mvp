@@ -170,7 +170,6 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState("negroni");
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<(typeof navItems)[number]["id"]>("home");
-  const [activeStep, setActiveStep] = useState(0);
   const [batch, setBatch] = useState(1);
   const [favorites, setFavorites] = useState<string[]>(["negroni", "gimlet"]);
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
@@ -208,7 +207,6 @@ export default function Home() {
 
   const selectRecipe = (recipe: Recipe) => {
     setSelectedId(recipe.id);
-    setActiveStep(0);
     setBatch(1);
     setTimerSeconds(0);
     setTimerRunning(false);
@@ -235,7 +233,6 @@ export default function Home() {
   };
 
   const visibleRecipes = activeTab === "saved" ? filteredRecipes.filter((recipe) => favorites.includes(recipe.id)) : filteredRecipes;
-  const currentStep = selectedRecipe.steps[activeStep];
 
   return (
     <div className="min-h-dvh bg-[#f4f0e8] text-[#171714] selection:bg-[#bf3f32] selection:text-white">
@@ -293,8 +290,6 @@ export default function Home() {
               recipe={selectedRecipe}
               batch={batch}
               setBatch={setBatch}
-              activeStep={activeStep}
-              setActiveStep={setActiveStep}
               timerSeconds={timerSeconds}
               timerRunning={timerRunning}
               setTimerRunning={setTimerRunning}
@@ -454,8 +449,6 @@ function RecipeMode({
   recipe,
   batch,
   setBatch,
-  activeStep,
-  setActiveStep,
   timerSeconds,
   timerRunning,
   setTimerRunning,
@@ -467,8 +460,6 @@ function RecipeMode({
   recipe: Recipe;
   batch: number;
   setBatch: (value: number) => void;
-  activeStep: number;
-  setActiveStep: (value: number) => void;
   timerSeconds: number;
   timerRunning: boolean;
   setTimerRunning: (value: boolean) => void;
@@ -477,9 +468,15 @@ function RecipeMode({
   isFavorite: boolean;
   onFavorite: () => void;
 }) {
-  const step = recipe.steps[activeStep];
-  const isLastStep = activeStep === recipe.steps.length - 1;
-  const timerDuration = step.timer ?? 0;
+  const [timerStepIndex, setTimerStepIndex] = useState<number | null>(null);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const toggleStepComplete = (index: number) => {
+    setCompletedSteps((current) => current.includes(index) ? current.filter((stepIndex) => stepIndex !== index) : [...current, index]);
+  };
+  const launchTimer = (duration: number, index: number) => {
+    setTimerStepIndex(index);
+    startTimer(duration);
+  };
   return (
     <section className="px-5 py-5 sm:px-8 lg:px-10 lg:py-9">
       <div className="mx-auto max-w-6xl">
@@ -488,28 +485,32 @@ function RecipeMode({
           <button onClick={onFavorite} className="grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white transition active:scale-95" aria-label="즐겨찾기"><Heart size={16} fill={isFavorite ? "#bf3f32" : "none"} className={isFavorite ? "text-[#bf3f32]" : ""} /></button>
         </div>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
-          <div>
-            <div className="grid overflow-hidden rounded-sm bg-[#171714] text-[#f8f5ef] shadow-[8px_9px_0_#d9d1c3] sm:grid-cols-[minmax(0,1fr)_170px]">
-              <div className="px-5 pb-5 pt-6 sm:px-7 sm:pb-7"><div className="flex items-start justify-between"><span className="font-mono text-[10px] font-bold tracking-[0.16em] text-white/60">#{recipe.id.toUpperCase().slice(0, 6)} · {recipe.method.toUpperCase()}</span><span className="rounded-full border border-white/25 px-2 py-1 text-[10px] font-bold text-white/80">{recipe.time}</span></div><h2 className="mt-7 font-serif text-4xl tracking-[-0.04em] sm:text-5xl">{recipe.name}</h2><p className="mt-2 text-sm text-white/65">{recipe.koreanName} · {recipe.glass} · {recipe.garnish}</p><p className="mt-6 max-w-md border-l-2 border-[#bf3f32] pl-3 text-sm leading-6 text-white/80">{recipe.description}</p></div><div className="relative min-h-36 border-t border-white/15 sm:border-l sm:border-t-0"><img src={recipe.image} alt={`${recipe.name} 제조 참고 이미지`} className="absolute inset-0 h-full w-full object-cover grayscale-[20%] opacity-80" /><div className="absolute inset-x-0 bottom-0 bg-[#bf3f32] px-3 py-2 font-mono text-[9px] font-bold tracking-[0.13em] text-white">REFERENCE / GARNISH</div></div>
-            </div>
-
-            <div className="mt-9 lg:hidden"><IngredientBlock recipe={recipe} batch={batch} setBatch={setBatch} /></div>
-            <div className="mt-9">
-              <div className="flex items-end justify-between border-b border-black/15 pb-3"><div><p className="font-mono text-[10px] font-bold tracking-[0.16em] text-[#8b867c]">MAKE / STEP {String(activeStep + 1).padStart(2, "0")}</p><h3 className="mt-1 font-serif text-2xl">제조 순서</h3></div><span className="text-xs font-bold text-[#777268]">{activeStep + 1} / {recipe.steps.length}</span></div>
-
-              <div className="mt-5 rounded-sm border border-black/10 bg-white p-5 sm:p-7">
-                <div className="flex items-start gap-4"><span className="font-serif text-5xl leading-none text-[#bf3f32]">{String(activeStep + 1).padStart(2, "0")}</span><div className="pt-1"><h4 className="font-serif text-2xl leading-tight">{step.title}</h4><p className="mt-3 max-w-xl text-sm leading-6 text-[#635f57]">{step.detail}</p></div></div>
-                {step.timer && <div className="mt-7 border-t border-black/10 pt-5"><div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#ece5d8] text-[#bf3f32]"><TimerReset size={19} /></div><div><p className="text-sm font-bold">{timerDuration}초 타이머</p><p className="text-xs text-[#777268]">셰이크가 끝나면 진동으로 알려드려요.</p></div></div><div className="flex items-center gap-2"><span className="font-mono text-xl font-bold tabular-nums">{timerSeconds ? formatTime(timerSeconds) : `00:${String(timerDuration).padStart(2, "0")}`}</span><button onClick={() => timerSeconds ? setTimerRunning(!timerRunning) : startTimer(timerDuration)} className="rounded-full bg-[#171714] px-4 py-2 text-xs font-bold text-white transition active:scale-95">{timerSeconds ? (timerRunning ? "일시정지" : "계속") : "시작"}</button></div></div></div>}
-                <div className="mt-8 flex gap-3"><button disabled={activeStep === 0} onClick={() => setActiveStep(activeStep - 1)} className="flex-1 rounded-sm border border-black/15 px-4 py-3 text-sm font-bold transition disabled:opacity-30 active:scale-[.98]">이전</button><button onClick={() => isLastStep ? toast.success("제조 완료", { description: `${recipe.name}을(를) 서빙하세요.` }) : setActiveStep(activeStep + 1)} className="flex flex-[1.4] items-center justify-center gap-2 rounded-sm bg-[#bf3f32] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#a93429] active:scale-[.98]">{isLastStep ? <><Check size={16} /> 완성</> : <>다음 단계 <ChevronRight size={16} /></>}</button></div>
-              </div>
-
-              <div className="mt-5 grid grid-cols-4 gap-1.5">{recipe.steps.map((item, index) => <button key={item.title} onClick={() => setActiveStep(index)} className={`h-1.5 transition ${index === activeStep ? "bg-[#bf3f32]" : index < activeStep ? "bg-[#171714]" : "bg-black/10"}`} aria-label={`${index + 1}단계: ${item.title}`} />)}</div>
-              <div className="mt-5 flex gap-2 overflow-x-auto pb-1">{recipe.steps.map((item, index) => <button key={item.title} onClick={() => setActiveStep(index)} className={`shrink-0 border-l-2 px-3 py-1.5 text-left text-xs transition ${index === activeStep ? "border-[#bf3f32] bg-[#ebe5da] font-bold text-[#171714]" : "border-transparent text-[#777268]"}`}>{String(index + 1).padStart(2, "0")} {item.title}</button>)}</div>
-            </div>
+        <div className="mt-6 max-w-3xl">
+          <div className="bg-[#171714] px-5 py-5 text-[#f8f5ef] shadow-[7px_8px_0_#d9d1c3] sm:px-7">
+            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold tracking-[0.16em] text-white/60">#{recipe.id.toUpperCase().slice(0, 6)} · {recipe.method.toUpperCase()} · {recipe.steps.length} STEPS</p><h2 className="mt-4 font-serif text-4xl tracking-[-0.04em] sm:text-5xl">{recipe.name}</h2><p className="mt-2 text-sm text-white/65">{recipe.koreanName} · {recipe.glass} · {recipe.garnish}</p></div><div className="shrink-0 text-right"><span className="rounded-full border border-white/25 px-2 py-1 font-mono text-[10px] font-bold text-white/80">{recipe.time}</span><span className="mt-4 ml-auto block ledger-barcode-light" aria-label="레시피 식별 바코드" /></div></div>
+            <p className="mt-5 border-l-2 border-[#bf3f32] pl-3 text-sm leading-6 text-white/80">{recipe.description}</p>
           </div>
 
-          <aside className="hidden lg:block"><IngredientBlock recipe={recipe} batch={batch} setBatch={setBatch} /><div className="mt-7 border border-black/10 bg-[#eee7db] p-5"><div className="flex items-center gap-2 text-[#bf3f32]"><Droplets size={16} /><p className="font-mono text-[10px] font-bold tracking-[0.16em]">BAR NOTE</p></div><p className="mt-3 font-serif text-lg leading-snug">얼음은 맛의 절반입니다. 흐린 얼음은 쓰지 마세요.</p><p className="mt-3 text-xs leading-5 text-[#706b61]">현재 레시피는 2026.08.12 버전입니다.</p></div></aside>
+          <div className="mt-9"><IngredientBlock recipe={recipe} batch={batch} setBatch={setBatch} /></div>
+
+          <div className="mt-9">
+            <div className="flex items-end justify-between border-b border-black/15 pb-3"><div><p className="font-mono text-[10px] font-bold tracking-[0.16em] text-[#8b867c]">MAKE / FULL VIEW</p><h3 className="mt-1 font-serif text-2xl">제조 순서 전체</h3></div><span className="font-mono text-[10px] font-bold text-[#777268]">{completedSteps.length} / {recipe.steps.length} CHECKED</span></div>
+            <p className="mt-3 text-xs leading-5 text-[#777268]">다음 버튼 없이, 필요한 순서와 타이머를 한 화면에서 계속 확인하세요.</p>
+            <div className="mt-4 border-t border-black/15">
+              {recipe.steps.map((step, index) => {
+                const isComplete = completedSteps.includes(index);
+                const isTimerFocused = timerStepIndex === index;
+                return <article key={step.title} className={`grid grid-cols-[42px_minmax(0,1fr)_36px] gap-3 border-b border-black/15 py-5 transition ${isComplete ? "opacity-55" : ""}`}>
+                  <span className={`grid h-9 w-9 place-items-center rounded-full font-mono text-sm font-bold ${isComplete ? "bg-[#171714] text-white" : "bg-[#eee7db] text-[#bf3f32]"}`}>{isComplete ? <Check size={16} /> : String(index + 1).padStart(2, "0")}</span>
+                  <div><h4 className="text-base font-bold leading-5">{step.title}</h4><p className="mt-1.5 text-sm leading-6 text-[#625e55]">{step.detail}</p>{step.timer && <div className="mt-3 flex flex-wrap items-center gap-2"><button onClick={() => isTimerFocused && timerSeconds ? setTimerRunning(!timerRunning) : launchTimer(step.timer!, index)} className="flex items-center gap-2 rounded-full border border-black/15 bg-white px-3 py-1.5 text-xs font-bold transition active:scale-95"><TimerReset size={14} className="text-[#bf3f32]" />{isTimerFocused && timerSeconds ? `${formatTime(timerSeconds)} · ${timerRunning ? "일시정지" : "계속"}` : `${step.timer}초 타이머 시작`}</button>{isTimerFocused && timerSeconds > 0 && <button onClick={() => { setTimerRunning(false); setTimerStepIndex(null); }} className="text-xs font-bold text-[#777268]">초기화</button>}</div>}</div>
+                  <button onClick={() => toggleStepComplete(index)} className={`grid h-9 w-9 place-items-center rounded-full border transition active:scale-95 ${isComplete ? "border-[#bf3f32] bg-[#bf3f32] text-white" : "border-black/15 bg-white text-[#8a847a]"}`} aria-label={`${step.title} 완료 표시`}><Check size={16} /></button>
+                </article>;
+              })}
+            </div>
+            <button onClick={() => toast.success("제조 완료", { description: `${recipe.name}을(를) 서빙하세요.` })} className="mt-6 flex w-full items-center justify-center gap-2 rounded-sm bg-[#bf3f32] px-4 py-3.5 text-sm font-bold text-white transition hover:bg-[#a93429] active:scale-[.98]"><Check size={16} /> 전체 제조 완료</button>
+          </div>
+
+          <div className="mt-8 border-l-2 border-black/15 pl-4"><div className="flex items-center gap-2 text-[#bf3f32]"><Droplets size={16} /><p className="font-mono text-[10px] font-bold tracking-[0.16em]">BAR NOTE</p></div><p className="mt-2 text-sm leading-6 text-[#625e55]">얼음은 맛의 절반입니다. 흐린 얼음은 쓰지 마세요.</p></div>
         </div>
       </div>
     </section>
