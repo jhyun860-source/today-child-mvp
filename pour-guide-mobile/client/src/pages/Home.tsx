@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { trpc } from "@/lib/trpc";
+import { resolveRecipePhotoReferences } from "@/lib/recipeVisuals";
+import { useLocation } from "wouter";
 
 type Recipe = {
   id: string;
@@ -37,6 +40,7 @@ type Recipe = {
   time: string;
   method: string;
   image: string;
+  garnishImage?: string;
   color: string;
   description: string;
   glass: string;
@@ -169,6 +173,8 @@ function formatTime(seconds: number) {
 }
 
 export default function Home() {
+  const [, setLocation] = useLocation();
+  const savedRecipeQuery = trpc.recipes.list.useQuery();
   const [selectedId, setSelectedId] = useState("negroni");
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<(typeof navItems)[number]["id"]>("home");
@@ -179,17 +185,43 @@ export default function Home() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [filter, setFilter] = useState<"All" | Recipe["category"]>("All");
 
-  const selectedRecipe = recipes.find((recipe) => recipe.id === selectedId) ?? recipes[0];
+  const catalogRecipes = useMemo<Recipe[]>(() => {
+    const savedRecipes = savedRecipeQuery.data
+      ?.filter(recipe => recipe.status === "active")
+      .map(recipe => {
+        const photos = resolveRecipePhotoReferences({ imageUrl: recipe.imageUrl, garnishImageUrl: recipe.garnishImageUrl });
+        return {
+        id: String(recipe.id),
+        name: recipe.name,
+        koreanName: recipe.koreanName || recipe.name,
+        category: (recipe.category === "Signatures" || recipe.category === "No/Low" ? recipe.category : "Classics") as Recipe["category"],
+        base: recipe.base,
+        taste: recipe.tasteTags,
+        time: `${Math.max(1, Math.round(recipe.serviceTimeSeconds / 60))} min`,
+        method: recipe.method,
+        image: recipe.imageUrl ? photos.completionImage : "/assets/citrus-service-still-life.jpg",
+        garnishImage: photos.garnishImage,
+        color: "#BF3F32",
+        description: recipe.description || "제조 순서와 계량을 확인하세요.",
+        glass: recipe.glass,
+        garnish: recipe.garnish,
+        ingredients: recipe.ingredients.map(ingredient => ({ amount: ingredient.amount, unit: ingredient.unit, item: ingredient.item, note: ingredient.note || undefined })),
+        steps: recipe.steps.map(step => ({ title: step.title, detail: step.detail, timer: step.timerSeconds || undefined })),
+      };
+      });
+    return savedRecipes && savedRecipes.length > 0 ? savedRecipes : recipes;
+  }, [savedRecipeQuery.data]);
+  const selectedRecipe = catalogRecipes.find((recipe) => recipe.id === selectedId) ?? catalogRecipes[0];
   const filteredRecipes = useMemo(() => {
     const keyword = query.trim().toLowerCase();
-    return recipes.filter((recipe) => {
+    return catalogRecipes.filter((recipe) => {
       const matchesQuery = [recipe.name, recipe.koreanName, recipe.base, recipe.method, ...recipe.taste]
         .join(" ")
         .toLowerCase()
         .includes(keyword);
       return matchesQuery && (filter === "All" || recipe.category === filter);
     });
-  }, [query, filter]);
+  }, [query, filter, catalogRecipes]);
 
   useEffect(() => {
     if (!timerRunning || timerSeconds <= 0) return;
@@ -229,9 +261,12 @@ export default function Home() {
   };
 
   const handleNav = (id: (typeof navItems)[number]["id"]) => {
+    if (id === "manage") {
+      setLocation("/manage");
+      return;
+    }
     setActiveTab(id);
     setIsRecipeOpen(false);
-    if (id === "manage") toast("관리 화면은 다음 단계에서 연결됩니다.");
   };
 
   const visibleRecipes = activeTab === "saved" ? filteredRecipes.filter((recipe) => favorites.includes(recipe.id)) : filteredRecipes;
@@ -521,24 +556,11 @@ function RecipeMode({
 }
 
 function RecipePhotoReference({ recipe }: { recipe: Recipe }) {
-  return (
-    <Dialog>
-      <div className="grid grid-cols-[minmax(0,1fr)_118px] overflow-hidden border border-black/15 bg-[#eee7db] sm:grid-cols-[minmax(0,1fr)_150px]">
-        <div className="px-4 py-4 sm:px-5"><p className="font-mono text-[10px] font-bold tracking-[0.16em] text-[#bf3f32]">VISUAL REFERENCE</p><p className="mt-1 font-serif text-xl">완성·가니시 참고</p><p className="mt-2 text-xs leading-5 text-[#625e55]">서빙 전 사진과 비교해 잔, 얼음, 가니시 위치를 확인하세요.</p></div>
-        <DialogTrigger asChild>
-          <button className="group relative min-h-[124px] overflow-hidden bg-[#d5ccbe] text-left" aria-label={`${recipe.name} 완성 사진 크게 보기`}>
-            <img src={recipe.image} alt={`${recipe.name} 완성 및 가니시 참고 사진`} className="absolute inset-0 h-full w-full object-contain p-1 transition duration-300 group-hover:scale-105" />
-            <span className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full bg-[#171714] text-white shadow-sm"><Maximize2 size={13} /></span>
-          </button>
-        </DialogTrigger>
-      </div>
-      <DialogContent className="max-w-[calc(100%-1.5rem)] border-black/15 bg-[#f8f5ef] p-4 sm:max-w-md">
-        <DialogHeader className="pr-8 text-left"><DialogTitle className="font-serif text-2xl">{recipe.name} 완성 참고</DialogTitle><DialogDescription>잔 · 얼음 · 가니시 위치를 비교하세요.</DialogDescription></DialogHeader>
-        <div className="mt-1 overflow-hidden bg-[#e5ddd0]"><img src={recipe.image} alt={`${recipe.name} 완성 및 가니시 참고 사진`} className="max-h-[65dvh] w-full object-contain" /></div>
-        <p className="border-l-2 border-[#bf3f32] pl-3 text-xs leading-5 text-[#625e55]">{recipe.glass}에 서빙하고, {recipe.garnish}를 마지막에 올립니다.</p>
-      </DialogContent>
-    </Dialog>
-  );
+  return <div className={`grid gap-3 ${recipe.garnishImage ? "sm:grid-cols-2" : ""}`}><ReferencePhotoCard label="COMPLETION / SERVE" title="완성 참고" helper="잔, 얼음, 전체 서빙 형태" image={recipe.image} alt={`${recipe.name} 완성 참고 사진`} detail={`${recipe.glass}에 서빙하고, ${recipe.garnish}를 마지막에 올립니다.`} />{recipe.garnishImage && <ReferencePhotoCard label="GARNISH / DETAIL" title="가니시 참고" helper="가니시 방향, 위치, 크기" image={recipe.garnishImage} alt={`${recipe.name} 가니시 참고 사진`} detail={`${recipe.garnish}의 방향과 위치를 사진처럼 맞춘 뒤 서빙합니다.`} />}</div>;
+}
+
+function ReferencePhotoCard({ label, title, helper, image, alt, detail }: { label: string; title: string; helper: string; image: string; alt: string; detail: string }) {
+  return <Dialog><div className="grid grid-cols-[minmax(0,1fr)_118px] overflow-hidden border border-black/15 bg-[#eee7db]"><div className="px-4 py-4"><p className="font-mono text-[10px] font-bold tracking-[0.15em] text-[#bf3f32]">{label}</p><p className="mt-1 font-serif text-xl">{title}</p><p className="mt-2 text-xs leading-5 text-[#625e55]">{helper}</p></div><DialogTrigger asChild><button className="group relative min-h-[124px] overflow-hidden bg-[#d5ccbe] text-left" aria-label={`${title} 사진 크게 보기`}><img src={image} alt={alt} className="absolute inset-0 h-full w-full object-contain p-1 transition duration-300 group-hover:scale-105" /><span className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full bg-[#171714] text-white shadow-sm"><Maximize2 size={13} /></span></button></DialogTrigger></div><DialogContent className="max-w-[calc(100%-1.5rem)] border-black/15 bg-[#f8f5ef] p-4 sm:max-w-md"><DialogHeader className="pr-8 text-left"><DialogTitle className="font-serif text-2xl">{title}</DialogTitle><DialogDescription>{helper}</DialogDescription></DialogHeader><div className="mt-1 overflow-hidden bg-[#e5ddd0]"><img src={image} alt={alt} className="max-h-[65dvh] w-full object-contain" /></div><p className="border-l-2 border-[#bf3f32] pl-3 text-xs leading-5 text-[#625e55]">{detail}</p></DialogContent></Dialog>;
 }
 
 function IngredientBlock({ recipe, batch, setBatch }: { recipe: Recipe; batch: number; setBatch: (value: number) => void }) {
